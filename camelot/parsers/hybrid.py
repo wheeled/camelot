@@ -72,6 +72,8 @@ class Hybrid(BaseParser):
                 setattr(self.stream, attr, getattr(self, attr))
             self.stream._generate_table_bbox()
             self.table_bbox = self.stream.table_bbox
+            for attr in ('vertical_segments', 'horizontal_segments'):
+                setattr(self.stream, attr, getattr(self.lattice, attr))
 
             if not self.lattice.vertical_segments:  # case for 185_Fox
                 h_s = self.lattice.horizontal_segments
@@ -80,7 +82,7 @@ class Hybrid(BaseParser):
                 for table_idx, tk in enumerate(
                     sorted(self.table_bbox.keys(), key=lambda x: x[1], reverse=True)
                 ):
-                    cols, rows = self.stream._generate_columns_and_rows(table_idx, tk, h_s=h_s)
+                    cols, rows = self.stream._generate_columns_and_rows(table_idx, tk)
                     table = self.stream._generate_table(table_idx, cols, rows)
                     table._bbox = tk
                     _tables.append(table)

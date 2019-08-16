@@ -317,22 +317,8 @@ class Stream(BaseParser):
                 table_bbox[(x1, y2, x2, y1)] = None
         self.table_bbox = table_bbox
 
-    def _generate_columns_and_rows(self, table_idx, tk, horizontal_segments=None, vertical_segments=None):
-        # select elements which lie within table_bbox
-        # t_bbox = {}
-        #
-        # v_s, h_s = segments_in_bbox(
-        #     tk, vertical_segments, horizontal_segments
-        # )
-        #
-        # t_bbox["horizontal"] = text_in_bbox(tk, self.horizontal_text)
-        # t_bbox["vertical"] = text_in_bbox(tk, self.vertical_text)
-        #
-        # t_bbox["horizontal"].sort(key=lambda x: (-x.y0, x.x0))
-        # t_bbox["vertical"].sort(key=lambda x: (x.x0, -x.y0))
-        #
-        # self.t_bbox = t_bbox
-        v_s, h_s = self.select_table_bbox_elements(tk, vertical_segments, horizontal_segments)
+    def _generate_columns_and_rows(self, table_idx, tk):
+        v_s, h_s = self.select_table_bbox_elements(tk)
 
         text_x_min, text_y_min, text_x_max, text_y_max = self._text_bbox(self.t_bbox)
         if h_s:

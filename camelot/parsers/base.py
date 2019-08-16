@@ -2,7 +2,7 @@
 
 import os
 
-from ..utils import get_page_layout, get_text_objects
+from ..utils import get_page_layout, get_text_objects, segments_in_bbox, text_in_bbox
 
 
 class BaseParser(object):
@@ -19,12 +19,12 @@ class BaseParser(object):
         self.pdf_width, self.pdf_height = self.dimensions
         self.rootname, __ = os.path.splitext(self.filename)
 
-    def select_table_bbox_elements(self, tk, vertical_segments, horizontal_segments):
+    def select_table_bbox_elements(self, tk):
         t_bbox = {}
-
-        v_s, h_s = segments_in_bbox(
-            tk, vertical_segments, horizontal_segments
-        )
+        try:
+            v_s, h_s = segments_in_bbox(tk, self.vertical_segments, self.horizontal_segments)
+        except AttributeError:
+            v_s = h_s = []
 
         t_bbox["horizontal"] = text_in_bbox(tk, self.horizontal_text)
         t_bbox["vertical"] = text_in_bbox(tk, self.vertical_text)

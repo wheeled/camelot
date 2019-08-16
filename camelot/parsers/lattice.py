@@ -262,9 +262,9 @@ class Lattice(BaseParser):
                 line_scale=self.line_scale,
                 iterations=self.iterations,
             )
-
-            print(sorted(vertical_segments))
-
+            #
+            # print(sorted(vertical_segments))
+            #
             horizontal_mask, horizontal_segments = find_lines(
                 self.threshold,
                 regions=regions,
@@ -272,9 +272,9 @@ class Lattice(BaseParser):
                 line_scale=self.line_scale,
                 iterations=self.iterations,
             )
-
-            print(sorted(horizontal_segments))
-
+            #
+            # print(sorted(horizontal_segments))
+            #
             contours = find_contours(vertical_mask, horizontal_mask)
             table_bbox = find_joints(contours, vertical_mask, horizontal_mask)
         else:
@@ -302,17 +302,26 @@ class Lattice(BaseParser):
 
     def _generate_columns_and_rows(self, table_idx, tk):
         # select elements which lie within table_bbox
-        t_bbox = {}
-        v_s, h_s = segments_in_bbox(
-            tk, self.vertical_segments, self.horizontal_segments
-        )
-        t_bbox["horizontal"] = text_in_bbox(tk, self.horizontal_text)
-        t_bbox["vertical"] = text_in_bbox(tk, self.vertical_text)
 
-        t_bbox["horizontal"].sort(key=lambda x: (-x.y0, x.x0))
-        t_bbox["vertical"].sort(key=lambda x: (x.x0, -x.y0))
+        v_s, h_s = self.select_table_bbox_elements(tk)
 
-        self.t_bbox = t_bbox
+        # t_bbox = {}
+        #
+        # v_s, h_s = segments_in_bbox(
+        #     tk,
+        #     self.vertical_segments,
+        #     self.horizontal_segments
+        # )
+        #
+        # t_bbox["horizontal"] = text_in_bbox(tk, self.horizontal_text)
+        # t_bbox["vertical"] = text_in_bbox(tk, self.vertical_text)
+        #
+        # t_bbox["horizontal"].sort(key=lambda x: (-x.y0, x.x0))
+        # t_bbox["vertical"].sort(key=lambda x: (x.x0, -x.y0))
+        #
+        # self.t_bbox = t_bbox
+        #
+
 
         cols, rows = zip(*self.table_bbox[tk])
         cols, rows = list(cols), list(rows)
