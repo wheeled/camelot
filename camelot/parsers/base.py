@@ -18,3 +18,20 @@ class BaseParser(object):
         self.vertical_text = get_text_objects(self.layout, ltype="vertical_text")
         self.pdf_width, self.pdf_height = self.dimensions
         self.rootname, __ = os.path.splitext(self.filename)
+
+    def select_table_bbox_elements(self, tk, vertical_segments, horizontal_segments):
+        t_bbox = {}
+
+        v_s, h_s = segments_in_bbox(
+            tk, vertical_segments, horizontal_segments
+        )
+
+        t_bbox["horizontal"] = text_in_bbox(tk, self.horizontal_text)
+        t_bbox["vertical"] = text_in_bbox(tk, self.vertical_text)
+
+        t_bbox["horizontal"].sort(key=lambda x: (-x.y0, x.x0))
+        t_bbox["vertical"].sort(key=lambda x: (x.x0, -x.y0))
+
+        self.t_bbox = t_bbox
+
+        return v_s, h_s

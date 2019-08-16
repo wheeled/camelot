@@ -317,21 +317,30 @@ class Stream(BaseParser):
                 table_bbox[(x1, y2, x2, y1)] = None
         self.table_bbox = table_bbox
 
-    def _generate_columns_and_rows(self, table_idx, tk):
+    def _generate_columns_and_rows(self, table_idx, tk, horizontal_segments=None, vertical_segments=None):
         # select elements which lie within table_bbox
-        t_bbox = {}
-        t_bbox["horizontal"] = text_in_bbox(tk, self.horizontal_text)
-        t_bbox["vertical"] = text_in_bbox(tk, self.vertical_text)
-
-        t_bbox["horizontal"].sort(key=lambda x: (-x.y0, x.x0))
-        t_bbox["vertical"].sort(key=lambda x: (x.x0, -x.y0))
-
-        self.t_bbox = t_bbox
+        # t_bbox = {}
+        #
+        # v_s, h_s = segments_in_bbox(
+        #     tk, vertical_segments, horizontal_segments
+        # )
+        #
+        # t_bbox["horizontal"] = text_in_bbox(tk, self.horizontal_text)
+        # t_bbox["vertical"] = text_in_bbox(tk, self.vertical_text)
+        #
+        # t_bbox["horizontal"].sort(key=lambda x: (-x.y0, x.x0))
+        # t_bbox["vertical"].sort(key=lambda x: (x.x0, -x.y0))
+        #
+        # self.t_bbox = t_bbox
+        v_s, h_s = self.select_table_bbox_elements(tk, vertical_segments, horizontal_segments)
 
         text_x_min, text_y_min, text_x_max, text_y_max = self._text_bbox(self.t_bbox)
-        rows_grouped = self._group_rows(self.t_bbox["horizontal"], row_tol=self.row_tol)
-        rows = self._join_rows(rows_grouped, text_y_max, text_y_min)
-        elements = [len(r) for r in rows_grouped]
+        if h_s:
+            rows = h_s
+        else:
+            rows_grouped = self._group_rows(self.t_bbox["horizontal"], row_tol=self.row_tol)
+            rows = self._join_rows(rows_grouped, text_y_max, text_y_min)
+            elements = [len(r) for r in rows_grouped]
 
         if self.columns is not None and self.columns[table_idx] != "":
             # user has to input boundary columns too

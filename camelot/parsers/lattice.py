@@ -262,6 +262,9 @@ class Lattice(BaseParser):
                 line_scale=self.line_scale,
                 iterations=self.iterations,
             )
+
+            print(sorted(vertical_segments))
+
             horizontal_mask, horizontal_segments = find_lines(
                 self.threshold,
                 regions=regions,
@@ -269,6 +272,8 @@ class Lattice(BaseParser):
                 line_scale=self.line_scale,
                 iterations=self.iterations,
             )
+
+            print(sorted(horizontal_segments))
 
             contours = find_contours(vertical_mask, horizontal_mask)
             table_bbox = find_joints(contours, vertical_mask, horizontal_mask)
@@ -397,7 +402,7 @@ class Lattice(BaseParser):
             else:
                 warnings.warn(
                     "No tables found on {}".format(os.path.basename(self.rootname))
-                )
+                )  # TODO: more correctly no TEXT found on page, whether or not a table is found
             return []
 
         self._generate_image()

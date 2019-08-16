@@ -6,7 +6,7 @@ import sys
 from PyPDF2 import PdfFileReader, PdfFileWriter
 
 from .core import TableList
-from .parsers import Stream, Lattice
+from .parsers import Stream, Lattice, Hybrid
 from .utils import (
     TemporaryDirectory,
     get_page_layout,
@@ -16,6 +16,11 @@ from .utils import (
     download_url,
 )
 
+parsers = {
+    'lattice': Lattice,
+    'stream': Stream,
+    'hybrid': Hybrid,
+}
 
 class PDFHandler(object):
     """Handles all operations like temp directory creation, splitting
@@ -166,7 +171,7 @@ class PDFHandler(object):
             pages = [
                 os.path.join(tempdir, "page-{0}.pdf".format(p)) for p in self.pages
             ]
-            parser = Lattice(**kwargs) if flavor == "lattice" else Stream(**kwargs)
+            parser = parsers[flavor](**kwargs)
             for p in pages:
                 t = parser.extract_tables(
                     p, suppress_stdout=suppress_stdout, layout_kwargs=layout_kwargs
