@@ -318,7 +318,7 @@ class Stream(BaseParser):
         self.table_bbox = table_bbox
 
     def _generate_columns_and_rows(self, table_idx, tk):
-        v_s, h_s = self.select_table_bbox_elements(tk)
+        v_s, h_s = self._select_table_bbox_elements(tk)
 
         text_x_min, text_y_min, text_x_max, text_y_max = self._text_bbox(self.t_bbox)
         if h_s:
@@ -428,19 +428,20 @@ class Stream(BaseParser):
 
     def extract_tables(self, filename, suppress_stdout=False, layout_kwargs={}):
         self._generate_layout(filename, layout_kwargs)
-        if not suppress_stdout:
-            logger.info("Processing {}".format(os.path.basename(self.rootname)))
-
-        if not self.horizontal_text:
-            if self.images:
-                warnings.warn(
-                    "{} is image-based, camelot only works on"
-                    " text-based pages.".format(os.path.basename(self.rootname))
-                )
-            else:
-                warnings.warn(
-                    "No tables found on {}".format(os.path.basename(self.rootname))
-                )
+        # if not suppress_stdout:
+        #     logger.info("Processing {}".format(os.path.basename(self.rootname)))
+        #
+        # if not self.horizontal_text:
+        #     if self.images:
+        #         warnings.warn(
+        #             "{} is image-based, camelot only works on"
+        #             " text-based pages.".format(os.path.basename(self.rootname))
+        #         )
+        #     else:
+        #         warnings.warn(
+        #             "No tables found on {}".format(os.path.basename(self.rootname))
+        #         )
+        if self._log_and_warn(suppress_stdout):
             return []
 
         self._generate_table_bbox()

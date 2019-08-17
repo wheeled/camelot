@@ -262,9 +262,6 @@ class Lattice(BaseParser):
                 line_scale=self.line_scale,
                 iterations=self.iterations,
             )
-            #
-            # print(sorted(vertical_segments))
-            #
             horizontal_mask, horizontal_segments = find_lines(
                 self.threshold,
                 regions=regions,
@@ -272,9 +269,6 @@ class Lattice(BaseParser):
                 line_scale=self.line_scale,
                 iterations=self.iterations,
             )
-            #
-            # print(sorted(horizontal_segments))
-            #
             contours = find_contours(vertical_mask, horizontal_mask)
             table_bbox = find_joints(contours, vertical_mask, horizontal_mask)
         else:
@@ -300,9 +294,9 @@ class Lattice(BaseParser):
             table_bbox, vertical_segments, horizontal_segments, pdf_scalers
         )
 
-    def _generate_columns_and_rows(self, table_idx, tk, horizontal_segments=None, vertical_segments=None):
+    def _generate_columns_and_rows(self, table_idx, tk):
         # select elements which lie within table_bbox
-        v_s, h_s = self.select_table_bbox_elements(tk)
+        v_s, h_s = self._select_table_bbox_elements(tk)
 
         cols, rows = zip(*self.table_bbox[tk])
         cols, rows = list(cols), list(rows)
@@ -380,19 +374,20 @@ class Lattice(BaseParser):
 
     def extract_tables(self, filename, suppress_stdout=False, layout_kwargs={}):
         self._generate_layout(filename, layout_kwargs)
-        if not suppress_stdout:
-            logger.info("Processing {}".format(os.path.basename(self.rootname)))
-
-        if not self.horizontal_text:
-            if self.images:
-                warnings.warn(
-                    "{} is image-based, camelot only works on"
-                    " text-based pages.".format(os.path.basename(self.rootname))
-                )
-            else:
-                warnings.warn(
-                    "No tables found on {}".format(os.path.basename(self.rootname))
-                )  # TODO: more correctly no TEXT found on page, whether or not a table is found
+        # if not suppress_stdout:
+        #     logger.info("Processing {}".format(os.path.basename(self.rootname)))
+        #
+        # if not self.horizontal_text:
+        #     if self.images:
+        #         warnings.warn(
+        #             "{} is image-based, camelot only works on"
+        #             " text-based pages.".format(os.path.basename(self.rootname))
+        #         )
+        #     else:
+        #         warnings.warn(
+        #             "No tables found on {}".format(os.path.basename(self.rootname))
+        #         )  # TODO: more correctly no TEXT found on page, whether or not a table is found
+        if self._log_and_warn(suppress_stdout):
             return []
 
         self._generate_image()
