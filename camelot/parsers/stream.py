@@ -385,62 +385,11 @@ class Stream(BaseParser):
         table = Table(cols, rows)
         table = table.set_all_edges()
 
-        pos_errors = []
-        # TODO: have a single list in place of two directional ones?
-        # sorted on x-coordinate based on reading order i.e. LTR or RTL
-        for direction in ["vertical", "horizontal"]:
-            for t in self.t_bbox[direction]:
-                indices, error = get_table_index(
-                    table,
-                    t,
-                    direction,
-                    split_text=self.split_text,
-                    flag_size=self.flag_size,
-                    strip_text=self.strip_text,
-                )
-                if indices[:2] != (-1, -1):
-                    pos_errors.append(error)
-                    for r_idx, c_idx, text in indices:
-                        table.cells[r_idx][c_idx].text = text
-        accuracy = compute_accuracy([[100, pos_errors]])
-
-        data = table.data
-        table.df = pd.DataFrame(data)
-        table.shape = table.df.shape
-
-        whitespace = compute_whitespace(data)
-        table.flavor = "stream"
-        table.accuracy = accuracy
-        table.whitespace = whitespace
-        table.order = table_idx + 1
-        table.page = int(os.path.basename(self.rootname).replace("page-", ""))
-
-        # for plotting
-        _text = []
-        _text.extend([(t.x0, t.y0, t.x1, t.y1) for t in self.horizontal_text])
-        _text.extend([(t.x0, t.y0, t.x1, t.y1) for t in self.vertical_text])
-        table._text = _text
-        table._image = None
-        table._segments = None
-        table._textedges = self.textedges
-
+        table = self._update_attributes(table_idx, table)
         return table
 
     def extract_tables(self, filename, suppress_stdout=False, layout_kwargs={}):
         self._generate_layout(filename, layout_kwargs)
-        # if not suppress_stdout:
-        #     logger.info("Processing {}".format(os.path.basename(self.rootname)))
-        #
-        # if not self.horizontal_text:
-        #     if self.images:
-        #         warnings.warn(
-        #             "{} is image-based, camelot only works on"
-        #             " text-based pages.".format(os.path.basename(self.rootname))
-        #         )
-        #     else:
-        #         warnings.warn(
-        #             "No tables found on {}".format(os.path.basename(self.rootname))
-        #         )
         if self._log_and_warn(suppress_stdout):
             return []
 

@@ -33,19 +33,7 @@ class Hybrid(BaseParser):
 
     def extract_tables(self, filename, suppress_stdout=False, layout_kwargs={}):
         self._generate_layout(filename, layout_kwargs)
-        if not suppress_stdout:
-            logger.info("Processing {}".format(os.path.basename(self.rootname)))
-
-        if not self.horizontal_text:
-            if self.images:
-                warnings.warn(
-                    "{} is image-based, camelot only works on"
-                    " text-based pages.".format(os.path.basename(self.rootname))
-                )
-            else:
-                warnings.warn(
-                    "No tables found on {}".format(os.path.basename(self.rootname))
-                )  # TODO: more correctly no TEXT found on page, whether or not a table is found
+        if self._log_and_warn(suppress_stdout):
             return []
 
         for attr in ('rootname', 'filename', 'pdf_width', 'pdf_height', 'horizontal_text', 'vertical_text'):
