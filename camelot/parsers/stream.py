@@ -130,7 +130,7 @@ class Stream(BaseParser):
                 if not np.isclose(row_y, t.y0, atol=row_tol):
                     rows.append(sorted(temp, key=lambda t: t.x0))
                     temp = []
-                    row_y = t.y0
+                row_y = t.y0
                 temp.append(t)
         rows.append(sorted(temp, key=lambda t: t.x0))
         __ = rows.pop(0)  # TODO: hacky
@@ -321,12 +321,12 @@ class Stream(BaseParser):
         v_s, h_s = self._select_table_bbox_elements(tk)
 
         text_x_min, text_y_min, text_x_max, text_y_max = self._text_bbox(self.t_bbox)
-        if h_s:
-            rows = h_s
-        else:
-            rows_grouped = self._group_rows(self.t_bbox["horizontal"], row_tol=self.row_tol)
-            rows = self._join_rows(rows_grouped, text_y_max, text_y_min)
-            elements = [len(r) for r in rows_grouped]
+        # if h_s:
+        #     rows = h_s
+        # else:
+        rows_grouped = self._group_rows(self.t_bbox["horizontal"], row_tol=self.row_tol)
+        rows = self._join_rows(rows_grouped, text_y_max, text_y_min)
+        elements = [len(r) for r in rows_grouped]
 
         if self.columns is not None and self.columns[table_idx] != "":
             # user has to input boundary columns too

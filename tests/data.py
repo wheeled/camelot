@@ -1626,14 +1626,13 @@ data_stream_table_areas = [
 
 data_stream_columns = [
     [
-        "Clave",
+        "Clave \nEntidad",
         "Nombre Entidad",
-        "Clave",
+        "Clave \nMunicipio",
         "Nombre Municipio",
-        "Clave",
+        "Clave \nLocalidad",
         "Nombre Localidad",
     ],
-    ["Entidad", "", "Municipio", "", "Localidad", ""],
     ["01", "Aguascalientes", "001", "Aguascalientes", "0094", "Granja Adelita"],
     ["01", "Aguascalientes", "001", "Aguascalientes", "0096", "Agua Azul"],
     ["01", "Aguascalientes", "001", "Aguascalientes", "0100", "Rancho Alegre"],
