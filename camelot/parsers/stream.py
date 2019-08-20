@@ -197,11 +197,20 @@ class Stream(BaseParser):
             List of continuous row y-coordinate tuples.
 
         """
-        row_mids = [
-            sum([(t.y0 + t.y1) / 2 for t in r]) / len(r) if len(r) > 0 else 0
-            for r in rows_grouped
+        row_coords = [
+            np.array(list([list(text.bbox) for text in rows_grouped[n]]), dtype=float)
+            for n, row in enumerate(rows_grouped)
         ]
-        rows = [(row_mids[i] + row_mids[i - 1]) / 2 for i in range(1, len(row_mids))]
+        row_bboxes = [
+            (
+                np.min(coords[:, 0]),
+                np.min(coords[:, 1]),
+                np.max(coords[:, 2]),
+                np.max(coords[:, 3]),
+            )
+            for coords in row_coords
+        ]
+        rows = [(row_bboxes[i][3] + row_bboxes[i - 1][1]) / 2 for i in range(1, len(row_bboxes))]
         rows.insert(0, text_y_max)
         rows.append(text_y_min)
         rows = [(rows[i], rows[i + 1]) for i in range(0, len(rows) - 1)]
