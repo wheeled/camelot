@@ -122,12 +122,14 @@ class Stream(BaseParser):
         row_y = 0
         rows = []
         temp = []
+        adaptive = row_tol == -1
         for t in text:
             # is checking for upright necessary?
             # if t.get_text().strip() and all([obj.upright for obj in t._objs if
             # type(obj) is LTChar]):
             if t.get_text().strip():
-                if not np.isclose(row_y, t.y0, atol=row_tol):
+                text_height = t.y1 - t.y0
+                if not np.isclose(row_y, t.y0, atol=text_height * 1.28 if adaptive else row_tol):
                     rows.append(sorted(temp, key=lambda t: t.x0))
                     temp = []
                 row_y = t.y0
