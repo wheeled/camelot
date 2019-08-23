@@ -10,7 +10,13 @@ import pandas as pd
 
 from .base import BaseParser
 from ..core import TextEdges, Table
-from ..utils import text_in_bbox, get_table_index, compute_accuracy, compute_whitespace
+from ..utils import (
+    text_in_bbox,
+    get_table_index,
+    compute_accuracy,
+    compute_whitespace,
+    rle,
+)
 
 
 logger = logging.getLogger("camelot")
@@ -283,18 +289,98 @@ class Stream(BaseParser):
         Assumes that tables are situated relatively far apart
         vertically.
         """
+
+        def infer_horizontal_lines(textlines, direction='y', limits=(0, 0, self.pdf_width, self.pdf_height), trim=2):
+            h_s = text_in_bbox(limits, textlines)
+            return infer_lines(h_s, direction, (limits[1], limits[3]), trim)
+
+        def infer_vertical_lines(textlines, direction='x', limits=(0, 0, self.pdf_width, self.pdf_height), trim=-2):
+            v_s = text_in_bbox(limits, textlines)
+            return infer_lines(v_s, direction, (limits[0], limits[2]), trim)
+
+        def infer_lines(textlines, direction, limits, trim):
+            has_text = np.zeros(int(limits[1] - limits[0]), dtype=np.int8)
+            min, max = (direction + "0", direction + "1")
+            for tl in textlines:
+                if tl.get_text().strip():
+                    has_text[int(getattr(tl, min) - limits[0] + trim):int(getattr(tl, max) - limits[0] - trim)] = 1
+            has_text[-1] = 1
+            bands = rle(has_text)[1]
+            bands = bands.reshape(len(bands) // 2, 2)
+            return [np.average(band) + limits[0] for band in bands]
+
+        def infer_lattice(textlines, limits=(0, 0, self.pdf_width, self.pdf_height)):
+            # TODO: [wheeled] can it be made recursive?
+            y_lines = sorted(infer_horizontal_lines(textlines, limits=limits), reverse=True)
+            x_lines = infer_vertical_lines(textlines, limits=limits)
+            proforma_bbox = []
+            if len(x_lines) == 2 and len(y_lines) > 2:
+                # the bbox includes rows that are not in a table
+                new_y_limits = [(y_lines[n + 1], y_lines[n]) for n in range(len(y_lines) - 1)]
+                new_x_lines = {}
+                temp_bbox = {}
+                for new_limits in new_y_limits:
+                    new_x_lines.update({
+                        new_limits: infer_vertical_lines(
+                            textlines,
+                            limits=(0, new_limits[0], self.pdf_width, new_limits[1])
+                        )
+                    })
+                    if len(new_x_lines[new_limits]) == 2:
+                        if temp_bbox:
+                            proforma_bbox.append((
+                                temp_bbox['x0'],
+                                temp_bbox['y0'],
+                                temp_bbox['x1'],
+                                temp_bbox['y1'],
+                            ))
+                        temp_bbox = {}
+                    elif temp_bbox:
+                        temp_bbox.update({
+                            'x0': min(temp_bbox['x0'], min(new_x_lines[new_limits])),
+                            'y0': min(temp_bbox['y0'], min(new_limits)),
+                            'x1': max(temp_bbox['x1'], max(new_x_lines[new_limits])),
+                            'y1': max(temp_bbox['y1'], max(new_limits)),
+                        })
+                    else:
+                        temp_bbox = {
+                            'x0': min(new_x_lines[new_limits]),
+                            'y0': min(new_limits),
+                            'x1': max(new_x_lines[new_limits]),
+                            'y1': max(new_limits),
+                        }
+
+            elif len(x_lines) > 2 and len(y_lines) > 2:
+                # the bbox is a table (or a group of cells within a table)
+                proforma_bbox = [limits]
+
+            # TODO: [wheeled] return horizontal segments and vertical segments as well
+            return proforma_bbox
+
         # TODO: add support for arabic text #141
         # sort textlines in reading order
         textlines.sort(key=lambda x: (-x.y0, x.x0))
-        textedges = TextEdges(edge_tol=self.edge_tol)
-        # generate left, middle and right textedges
-        textedges.generate(textlines)
-        # select relevant edges
-        relevant_textedges = textedges.get_relevant()
-        self.textedges.extend(relevant_textedges)
-        # guess table areas using textlines and relevant edges
-        table_bbox = textedges.get_table_areas(textlines, relevant_textedges)
-        # treat whole page as table area if no table areas found
+
+        proforma_bbox = infer_lattice(textlines)
+        table_bbox = {}
+        for bbox in proforma_bbox:
+            new_bboxes = infer_lattice(textlines, limits=bbox)
+            table_bbox.update({bb: None for bb in new_bboxes})
+
+        # TODO: [wheeled] so far this algo is no better than nurminen:
+        # in foo.pdf it picks up the headings which nurminen doesn't
+        # it does produce lists which could be useful to operate as horizontal_segments and vertical_segments in lattice
+
+
+        # textedges = TextEdges(edge_tol=self.edge_tol)
+        # # generate left, middle and right textedges
+        # textedges.generate(textlines)
+        # # select relevant edges
+        # relevant_textedges = textedges.get_relevant()
+        # self.textedges.extend(relevant_textedges)
+        # # guess table areas using textlines and relevant edges
+        # table_bbox = textedges.get_table_areas(textlines, relevant_textedges)
+        # # treat whole page as table area if no table areas found
         if not len(table_bbox):
             table_bbox = {(0, 0, self.pdf_width, self.pdf_height): None}
 
