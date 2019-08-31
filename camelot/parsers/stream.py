@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 
 from .base import BaseParser
-from ..core import TextEdges, Table
+from ..core import TextEdges, Table, BoundingBox
 from ..utils import (
     text_in_bbox,
     get_table_index,
@@ -290,15 +290,15 @@ class Stream(BaseParser):
         vertically.
         """
 
-        def infer_horizontal_lines(textlines, direction='y', limits=(0, 0, self.pdf_width, self.pdf_height), trim=2):
+        def find_horizontal_lines(textlines, direction='y', limits=(0, 0, self.pdf_width, self.pdf_height), trim=2):
             h_s = text_in_bbox(limits, textlines)
-            return infer_lines(h_s, direction, (limits[1], limits[3]), trim)
+            return find_lines(h_s, direction, (limits[1], limits[3]), trim)
 
-        def infer_vertical_lines(textlines, direction='x', limits=(0, 0, self.pdf_width, self.pdf_height), trim=-2):
+        def find_vertical_lines(textlines, direction='x', limits=(0, 0, self.pdf_width, self.pdf_height), trim=-2):
             v_s = text_in_bbox(limits, textlines)
-            return infer_lines(v_s, direction, (limits[0], limits[2]), trim)
+            return find_lines(v_s, direction, (limits[0], limits[2]), trim)
 
-        def infer_lines(textlines, direction, limits, trim):
+        def find_lines(textlines, direction, limits, trim):
             has_text = np.zeros(int(limits[1] - limits[0]), dtype=np.int8)
             min, max = (direction + "0", direction + "1")
             for tl in textlines:
@@ -309,46 +309,31 @@ class Stream(BaseParser):
             bands = bands.reshape(len(bands) // 2, 2)
             return [np.average(band) + limits[0] for band in bands]
 
-        def infer_lattice(textlines, limits=(0, 0, self.pdf_width, self.pdf_height)):
+        def find_grid(textlines, limits=(0, 0, self.pdf_width, self.pdf_height)):
             # TODO: [wheeled] can it be made recursive?
-            y_lines = sorted(infer_horizontal_lines(textlines, limits=limits), reverse=True)
-            x_lines = infer_vertical_lines(textlines, limits=limits)
+            y_lines = sorted(find_horizontal_lines(textlines, limits=limits), reverse=True)
+            x_lines = find_vertical_lines(textlines, limits=limits)
             proforma_bbox = []
             if len(x_lines) == 2 and len(y_lines) > 2:
                 # the bbox includes rows that are not in a table
                 new_y_limits = [(y_lines[n + 1], y_lines[n]) for n in range(len(y_lines) - 1)]
                 new_x_lines = {}
-                temp_bbox = {}
+                temp_bbox = BoundingBox()
                 for new_limits in new_y_limits:
                     new_x_lines.update({
-                        new_limits: infer_vertical_lines(
+                        new_limits: find_vertical_lines(
                             textlines,
                             limits=(0, new_limits[0], self.pdf_width, new_limits[1])
                         )
                     })
                     if len(new_x_lines[new_limits]) == 2:
-                        if temp_bbox:
-                            proforma_bbox.append((
-                                temp_bbox['x0'],
-                                temp_bbox['y0'],
-                                temp_bbox['x1'],
-                                temp_bbox['y1'],
-                            ))
-                        temp_bbox = {}
-                    elif temp_bbox:
-                        temp_bbox.update({
-                            'x0': min(temp_bbox['x0'], min(new_x_lines[new_limits])),
-                            'y0': min(temp_bbox['y0'], min(new_limits)),
-                            'x1': max(temp_bbox['x1'], max(new_x_lines[new_limits])),
-                            'y1': max(temp_bbox['y1'], max(new_limits)),
-                        })
+                        if temp_bbox.extent:
+                            proforma_bbox.append(temp_bbox.extent)
+                        temp_bbox.clear()
+                    elif temp_bbox.extent:
+                        temp_bbox.encompass(x_range=new_x_lines[new_limits], y_range=new_limits)
                     else:
-                        temp_bbox = {
-                            'x0': min(new_x_lines[new_limits]),
-                            'y0': min(new_limits),
-                            'x1': max(new_x_lines[new_limits]),
-                            'y1': max(new_limits),
-                        }
+                        temp_bbox.reset(x_range=new_x_lines[new_limits], y_range=new_limits)
 
             elif len(x_lines) > 2 and len(y_lines) > 2:
                 # the bbox is a table (or a group of cells within a table)
@@ -361,14 +346,13 @@ class Stream(BaseParser):
         # sort textlines in reading order
         textlines.sort(key=lambda x: (-x.y0, x.x0))
 
-        proforma_bbox = infer_lattice(textlines)
+        proforma_bbox = find_grid(textlines)
         table_bbox = {}
         for bbox in proforma_bbox:
-            new_bboxes = infer_lattice(textlines, limits=bbox)
+            new_bboxes = find_grid(textlines, limits=bbox)
             table_bbox.update({bb: None for bb in new_bboxes})
 
         # TODO: [wheeled] so far this algo is no better than nurminen:
-        # in foo.pdf it picks up the headings which nurminen doesn't
         # it does produce lists which could be useful to operate as horizontal_segments and vertical_segments in lattice
 
 

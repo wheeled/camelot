@@ -208,19 +208,6 @@ class Lattice(BaseParser):
                                 t.cells[i][j].text = t.cells[i - 1][j].text
         return t
 
-    def _generate_image(self):
-        from ..ext.ghostscript import Ghostscript
-
-        self.imagename = "".join([self.rootname, ".png"])
-        gs_call = "-q -sDEVICE=png16m -o {} -r300 {}".format(
-            self.imagename, self.filename
-        )
-        gs_call = gs_call.encode().split()
-        null = open(os.devnull, "wb")
-        with Ghostscript(*gs_call, stdout=null) as gs:
-            pass
-        null.close()
-
     def _generate_table_bbox(self):
         def scale_areas(areas):
             scaled_areas = []

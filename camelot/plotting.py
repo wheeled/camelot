@@ -8,6 +8,8 @@ except ImportError:
 else:
     _HAS_MPL = True
 
+from PIL import Image
+
 
 class PlotMethods(object):
     def __call__(self, table, kind="text", filename=None):
@@ -20,7 +22,7 @@ class PlotMethods(object):
         table: camelot.core.Table
             A Camelot Table.
         kind : str, optional (default: 'text')
-            {'text', 'grid', 'contour', 'joint', 'line'}
+            {'text', 'grid', 'contour', 'textedge', joint', 'line'}
             The element type for which a plot should be generated.
         filepath: str, optional (default: None)
             Absolute path for saving the generated plot.
@@ -69,7 +71,7 @@ class PlotMethods(object):
         ax.set_ylim(min(ys) - 10, max(ys) + 10)
         return fig
 
-    def grid(self, table):
+    def gridv2(self, table):
         """Generates a plot for the detected table grids
         on the PDF page.
 
@@ -82,8 +84,28 @@ class PlotMethods(object):
         fig : matplotlib.fig.Figure
 
         """
+        # try:
+        img, table_bbox = table._image
+        img = img.resize((600, 900))  #, resample=Image.BOX)
+        """
+        Traceback (most recent call last):
+          File "/Users/wheeled/PycharmProjects/camelot/camelot/wheeled/sandbox.py", line 37, in <module>
+            camelot.plot(table, kind='gridv2')
+          File "/Users/wheeled/PycharmProjects/camelot/camelot/plotting.py", line 48, in __call__
+            return plot_method(table)
+          File "/Users/wheeled/PycharmProjects/camelot/camelot/plotting.py", line 89, in gridv2
+            img = img.resize((600, 900))  #, resample=Image.BOX)
+        ValueError: cannot resize an array that references or is referenced
+        by another array in this way.
+        Use the np.resize function or refcheck=False
+        """
+        _FOR_LATTICE = True
+        # except TypeError:
+        #     img, table_bbox = (None, {table._bbox: None})
+        #     _FOR_LATTICE = False
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect="equal")
+        # TODO: have access to table_bbox_unscaled - table.cells would need to be rescaled or img rescaled
         for row in table.cells:
             for cell in row:
                 if cell.left:
@@ -94,8 +116,37 @@ class PlotMethods(object):
                     ax.plot([cell.lt[0], cell.rt[0]], [cell.lt[1], cell.rt[1]])
                 if cell.bottom:
                     ax.plot([cell.lb[0], cell.rb[0]], [cell.lb[1], cell.rb[1]])
+        if _FOR_LATTICE:
+            ax.imshow(img)
         return fig
 
+    # def grid(self, table):
+    #     """Generates a plot for the detected table grids
+    #     on the PDF page.
+    #
+    #     Parameters
+    #     ----------
+    #     table : camelot.core.Table
+    #
+    #     Returns
+    #     -------
+    #     fig : matplotlib.fig.Figure
+    #
+    #     """
+    #     fig = plt.figure()
+    #     ax = fig.add_subplot(111, aspect="equal")
+    #     for row in table.cells:
+    #         for cell in row:
+    #             if cell.left:
+    #                 ax.plot([cell.lb[0], cell.lt[0]], [cell.lb[1], cell.lt[1]])
+    #             if cell.right:
+    #                 ax.plot([cell.rb[0], cell.rt[0]], [cell.rb[1], cell.rt[1]])
+    #             if cell.top:
+    #                 ax.plot([cell.lt[0], cell.rt[0]], [cell.lt[1], cell.rt[1]])
+    #             if cell.bottom:
+    #                 ax.plot([cell.lb[0], cell.rb[0]], [cell.lb[1], cell.rb[1]])
+    #     return fig
+    #
     def contour(self, table):
         """Generates a plot for all table boundaries present
         on the PDF page.
@@ -221,3 +272,4 @@ class PlotMethods(object):
         for h in horizontal:
             ax.plot([h[0], h[2]], [h[1], h[3]])
         return fig
+

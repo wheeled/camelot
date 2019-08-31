@@ -756,3 +756,63 @@ class TableList(object):
                 zipname = os.path.join(os.path.dirname(path), root) + ".zip"
                 with zipfile.ZipFile(zipname, "w", allowZip64=True) as z:
                     z.write(filepath, os.path.basename(filepath))
+
+
+class BoundingBox(object):
+    def __init__(self, extent=None):
+        self.x0 = None
+        self.y0 = None
+        self.x1 = None
+        self.y1 = None
+        if extent:
+            self.set(extent)
+
+    @property
+    def extent(self):
+        if any((self.x0 is None, self.y0 is None, self.x1 is None, self.y1 is None)):
+            return None
+        else:
+            return tuple((self.x0, self.y0, self.x1, self.y1))
+
+    @property
+    def int_extent(self):
+        if any((self.x0 is None, self.y0 is None, self.x1 is None, self.y1 is None)):
+            return None
+        else:
+            return tuple(int(value) for value in tuple((self.x0, self.y0, self.x1, self.y1)))
+
+    def set(self, extent):
+        self.x0 = max(0, extent[0])
+        self.y0 = max(0, extent[1])
+        self.x1 = extent[2]  # TODO: apply limit checking here too
+        self.y1 = extent[3]
+
+    def clear(self):
+        self.x0 = self.y0 = self.x1 = self.y1 = None
+
+    def encompass(self, extent=None, x_range=None, y_range=None):
+        if extent:
+            self.x0 = min(self.x0, extent[0])
+            self.y0 = min(self.y0, extent[1])
+            self.x1 = max(self.x1, extent[2])
+            self.y1 = max(self.y1, extent[3])
+        elif x_range and y_range:
+            self.x0 = min(self.x0, *x_range)
+            self.y0 = min(self.y0, *y_range)
+            self.x1 = max(self.x1, *x_range)
+            self.y1 = max(self.y1, *y_range)
+        else:
+            raise ValueError("must provide either extent or both x_range and y_range")
+
+    def reset(self, extent=None, x_range=None, y_range=None):
+        if extent:
+            self.set(extent)
+        elif x_range and y_range:
+            self.x0 = min(*x_range)
+            self.y0 = min(*y_range)
+            self.x1 = max(*x_range)
+            self.y1 = max(*y_range)
+        else:
+            raise ValueError("must provide either extent or both x_range and y_range")
+
+

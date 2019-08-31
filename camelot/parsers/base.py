@@ -32,6 +32,19 @@ class BaseParser(object):
         self.pdf_width, self.pdf_height = self.dimensions
         self.rootname, __ = os.path.splitext(self.filename)
 
+    def _generate_image(self, dpi=300):
+        from ..ext.ghostscript import Ghostscript
+
+        self.imagename = "".join([self.rootname, ".png"])
+        gs_call = "-q -sDEVICE=png16m -o {} -r{} {}".format(
+            self.imagename, dpi, self.filename
+        )
+        gs_call = gs_call.encode().split()
+        null = open(os.devnull, "wb")
+        with Ghostscript(*gs_call, stdout=null) as gs:
+            pass
+        null.close()
+
     def _log_and_warn(self, suppress_stdout):
         empty = False
         if not suppress_stdout:
